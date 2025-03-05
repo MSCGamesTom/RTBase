@@ -41,10 +41,8 @@ public:
 	// Add code here
 	bool rayIntersect(Ray& r, float& t)
 	{
-		if (t = (d - (n.dot(r.o))) / n.dot(r.dir) < 0)
-			return true;
-		else
-			return false;
+		t = (d - n.dot(r.o)) / n.dot(r.dir);
+		return t >= 0;
 	}
 };
 
@@ -131,14 +129,33 @@ public:
 	// Add code here
 	bool rayAABB(const Ray& r, float& t)
 	{
+		Vec3 tMin = (min - r.o) * r.invDir;
+		Vec3 tMax = (max - r.o) * r.invDir;
+
+		Vec3 tEnter = Min(tMin, tMax);
+		Vec3 tExit = Max(tMin, tMax);
+
+		float t_entry = std::max(tEnter.x, std::max(tEnter.y, tEnter.z));
+		float t_exit = std::max(tExit.x, std::max(tExit.y, tExit.z));
+
+		if (t_entry > t_exit || t_exit < 0) return false;
+		t = t_entry;
 		return true;
+
+		if (t_entry <= t_exit && t_exit >= 0)
+		{
+			t = t_entry;
+			return true;
+		}
+
+
 	}
 	// Add code here
 	bool rayAABB(const Ray& r)
 	{
 		return true;
 	}
-	// Add code here
+
 	float area()
 	{
 		Vec3 size = max - min;
