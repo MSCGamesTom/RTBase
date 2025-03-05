@@ -99,3 +99,60 @@ TEST(TriangleRayIntersect, BehindTriangle) {
 
     EXPECT_FALSE(intersects);
 }
+
+// AABB Ray Intersection Tests
+TEST(AABBRayIntersect, BasicIntersection) {
+    AABB box;
+    box.min = Vec3(-1, -1, -1);
+    box.max = Vec3(1, 1, 1);
+
+    Ray r;
+    r.init(Vec3(0, 0, 2), Vec3(0, 0, -1));
+
+    float t;
+    bool intersects = box.rayAABB(r, t);
+
+    EXPECT_TRUE(intersects);
+    EXPECT_GT(t, 0.0f);
+}
+
+TEST(AABBRayIntersect, NoIntersection) {
+    AABB box;
+    box.min = Vec3(-1, -1, -1);
+    box.max = Vec3(1, 1, 1);
+
+    Ray r;
+    r.init(Vec3(2, 2, 2), Vec3(1, 1, 1));
+
+    bool intersects = box.rayAABB(r);
+
+    EXPECT_FALSE(intersects);
+}
+
+TEST(AABBRayIntersect, InsideBox) {
+    AABB box;
+    box.min = Vec3(-1, -1, -1);
+    box.max = Vec3(1, 1, 1);
+
+    Ray r;
+    r.init(Vec3(0, 0, 0), Vec3(1, 0, 0));
+
+    float t;
+    bool intersects = box.rayAABB(r, t);
+
+    EXPECT_TRUE(intersects);
+    EXPECT_LT(t, 0.0f); // Indicates the ray starts inside the box
+}
+
+TEST(AABBRayIntersect, ParallelToBoxFace) {
+    AABB box;
+    box.min = Vec3(-1, -1, -1);
+    box.max = Vec3(1, 1, 1);
+
+    Ray r;
+    r.init(Vec3(0, 2, 0), Vec3(1, 0, 0));
+
+    bool intersects = box.rayAABB(r);
+
+    EXPECT_FALSE(intersects);
+}
