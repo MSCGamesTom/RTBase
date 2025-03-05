@@ -1,0 +1,7 @@
+﻿  Main.cpp
+  Generating code
+  Compiler switch has changed, fall back to full compilation.
+C:\Users\u5632744\Desktop\AdCG- 2\RTBase\Core.h(117): warning C4723: potential divide by 0
+  All 1936 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  RTBase.vcxproj -> C:\Users\u5632744\Desktop\AdCG- 2\x64\Release\RTBase.exe
