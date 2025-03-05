@@ -84,21 +84,62 @@ public:
 	void render()
 	{
 		film->incrementSPP();
-		for (unsigned int y = 0; y < film->height; y++)
+
+		const int tileSize = 32;
+
+		int Nx = (film->width + tileSize - 1) / tileSize;
+		int Ny = (film->height + tileSize - 1) / tileSize;
+		int totalTiles = Nx * Ny;
+
+		std::atomic<int> nextTileindex(0);
+
+		// One thread per processor
+		for (int i = 0; i < numProcs; i++) {
+			threads[i] = new std::thread([&, i]()
+				{
+					// Loop each thread until no more tiles
+					while (true) {
+						// Grab the next tile index
+						int tileIndex = nextTileindex.fetch_add(1);
+						if (tileIndex >= totalTiles) break;
+
+						// Convert that 1D tile index into (tileX, tileY)
+						int tileX = tileIndex % Nx;
+						int tileY = tileIndex / Nx;
+
+						// Compute the pixel range for this tile
+						int startX = tileX * tileSize;
+						int startY = tileY * tileSize;
+						int endX = min(startX + tileSize, (int)film->width);
+						int endY = min(startY + tileSize, (int)film->height);
+
+						// Get the random sampler for this thread
+						MTRandom& sampler = samplers[i];
+
+						// Render all pixels in [startX,endX) x [startY,endY)
+						for (int y = startY; y < endY; y++)
+						{
+							for (int x = startX; x < endX; x++)
+							{
+								float px = x + 0.5f;
+								float py = y + 0.5f;
+								Ray ray = scene->camera.generateRay(px, py);
+								Colour col = viewNormals(ray);
+								//Colour col = albedo(ray);
+								film->splat(px, py, col);
+								unsigned char r = (unsigned char)(col.r * 255);
+								unsigned char g = (unsigned char)(col.g * 255);
+								unsigned char b = (unsigned char)(col.b * 255);
+								canvas->draw(x, y, r, g, b);
+							}
+						}
+					}
+				});
+		}
+		for (int i = 0; i < numProcs; i++)
 		{
-			for (unsigned int x = 0; x < film->width; x++)
-			{
-				float px = x + 0.5f;
-				float py = y + 0.5f;
-				Ray ray = scene->camera.generateRay(px, py);
-				Colour col = viewNormals(ray);
-				//Colour col = albedo(ray);
-				film->splat(px, py, col);
-				unsigned char r = (unsigned char)(col.r * 255);
-				unsigned char g = (unsigned char)(col.g * 255);
-				unsigned char b = (unsigned char)(col.b * 255);
-				canvas->draw(x, y, r, g, b);
-			}
+			threads[i]->join();
+			delete threads[i];
 		}
 	}
 	int getSPP()

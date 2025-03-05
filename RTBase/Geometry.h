@@ -136,23 +136,17 @@ public:
 		Vec3 tExit = Max(tMin, tMax);
 
 		float t_entry = std::max(tEnter.x, std::max(tEnter.y, tEnter.z));
-		float t_exit = std::max(tExit.x, std::max(tExit.y, tExit.z));
+		float t_exit = std::min(tExit.x, std::min(tExit.y, tExit.z));
 
-		if (t_entry > t_exit || t_exit < 0) return false;
-		t = t_entry;
+		if (t_entry > t_exit || t_exit < 0) return false; // No intersection
+		t = (t_entry < 0) ? t_exit : t_entry; // If inside the box, use t_exit
 		return true;
-
-		if (t_entry <= t_exit && t_exit >= 0)
-		{
-			t = t_entry;
-			return true;
-		}
-
-
 	}
 	// Add code here
 	bool rayAABB(const Ray& r)
 	{
+		float t;
+		rayAABB(r, t);
 		return true;
 	}
 
