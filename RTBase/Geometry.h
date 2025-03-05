@@ -41,7 +41,10 @@ public:
 	// Add code here
 	bool rayIntersect(Ray& r, float& t)
 	{
-		return false;
+		if (t = (d - (n.dot(r.o))) / n.dot(r.dir) < 0)
+			return true;
+		else
+			return false;
 	}
 };
 
@@ -73,9 +76,19 @@ public:
 	{
 		return (vertices[0].p + vertices[1].p + vertices[2].p) / 3.0f;
 	}
-	// Add code here
+
 	bool rayIntersect(const Ray& r, float& t, float& u, float& v) const
 	{
+		float denom = Dot(n, r.dir);
+		if (denom == 0) { return false; }
+		t = (d - Dot(n, r.o)) / denom;
+		if (t < 0) { return false; }
+		Vec3 p = r.at(t);
+		float invArea = 1.0f / Dot(e1.cross(e2), n);
+		u = Dot(e1.cross(p - vertices[1].p), n) * invArea;
+		if (u < 0 || u > 1.0f) { return false; }
+		v = Dot(e2.cross(p - vertices[2].p), n) * invArea;
+		if (v < 0 || (u + v) > 1.0f) { return false; }
 		return true;
 	}
 	void interpolateAttributes(const float alpha, const float beta, const float gamma, Vec3& interpolatedNormal, float& interpolatedU, float& interpolatedV) const
