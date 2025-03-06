@@ -160,14 +160,42 @@ public:
 	unsigned int height;
 	int SPP;
 	ImageFilter* filter;
+
+	float A = 0.15;
+	float B = 0.50;
+	float C = 0.10;
+	float D = 0.20;
+	float E = 0.02;
+	float F = 0.30;
+	float W = 11.2;
+
 	void splat(const float x, const float y, const Colour& L)
 	{
 		// Code to splat a smaple with colour L into the image plane using an ImageFilter
 	}
+
+	float Filmic(float x) {
+
+		return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - (E / F);
+	}
+
 	void tonemap(int x, int y, unsigned char& r, unsigned char& g, unsigned char& b, float exposure = 1.0f)
 	{
-		// Return a tonemapped pixel at coordinates x, y
+		Colour pixel = film[(y * width) + x] * exposure / (float)SPP;
+		r = std::min(powf(std::max(pixel.r, 0.0f), 1.0f / 2.2f) * 255, 255.0f);
+		g = std::min(powf(std::max(pixel.g, 0.0f), 1.0f / 2.2f) * 255, 255.0f);
+		b = std::min(powf(std::max(pixel.b, 0.0f), 1.0f / 2.2f) * 255, 255.0f);
 	}
+
+	void FilmicTonemap(int x, int y, unsigned char& r, unsigned char& g, unsigned char& b, float exposure = 1.0f)
+	{
+		Colour pixel = film[(y * width) + x] * exposure / (float)SPP;
+
+		r = std::min(powf(std::max(Filmic(pixel.r) / Filmic(W), 0.0f), 1.0f / 2.2f) * 255, 255.0f);
+		g = std::min(powf(std::max(Filmic(pixel.g) / Filmic(W), 0.0f), 1.0f / 2.2f) * 255, 255.0f);
+		b = std::min(powf(std::max(Filmic(pixel.b) / Filmic(W), 0.0f), 1.0f / 2.2f) * 255, 255.0f);
+	}
+
 	// Do not change any code below this line
 	void init(int _width, int _height, ImageFilter* _filter)
 	{

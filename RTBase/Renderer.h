@@ -85,7 +85,7 @@ public:
 	{
 		film->incrementSPP();
 
-		const int tileSize = 32;
+		const int tileSize = 16;
 
 		int Nx = (film->width + tileSize - 1) / tileSize;
 		int Ny = (film->height + tileSize - 1) / tileSize;

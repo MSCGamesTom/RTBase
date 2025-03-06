@@ -115,3 +115,31 @@ TEST(AABBRayIntersect, BasicIntersection) {
     EXPECT_TRUE(intersects);
     EXPECT_GT(t, 0.0f);
 }
+
+TEST(AABBRayIntersect, NoIntersection) {
+    AABB box;
+    box.min = Vec3(-1, -1, -1);
+    box.max = Vec3(1, 1, 1);
+
+    Ray r;
+    r.init(Vec3(0, 0, 2), Vec3(0, 0, 1));
+
+    float t;
+    bool intersects = box.rayAABB(r, t);
+
+    EXPECT_FALSE(intersects);
+}
+
+TEST(AABBRayIntersect, ParallelRay) {
+    AABB box;
+    box.min = Vec3(-1, -1, -1);
+    box.max = Vec3(1, 1, 1);
+
+    Ray r;
+    r.init(box.min, Vec3(0, 0, 0));
+
+    float t;
+    bool intersects = box.rayAABB(r, t);
+
+    EXPECT_FALSE(intersects);
+}

@@ -1,0 +1,9 @@
+﻿  test.cpp
+C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(23,1): warning C4723: potential divide by 0
+C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(23,1): warning C4723: potential divide by 0
+C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(22,1): warning C4723: potential divide by 0
+C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(23,1): warning C4723: potential divide by 0
+C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(22,1): warning C4723: potential divide by 0
+C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(23,1): warning C4723: potential divide by 0
+C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(23,1): warning C4723: potential divide by 0
+  Testing.vcxproj -> C:\Users\u5632744\Desktop\AdvCG\x64\Release\Testing.exe
