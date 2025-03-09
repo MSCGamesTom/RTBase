@@ -190,7 +190,6 @@ public:
 	void FilmicTonemap(int x, int y, unsigned char& r, unsigned char& g, unsigned char& b, float exposure = 1.0f)
 	{
 		Colour pixel = film[(y * width) + x] * exposure / (float)SPP;
-
 		r = std::min(powf(std::max(Filmic(pixel.r) / Filmic(W), 0.0f), 1.0f / 2.2f) * 255, 255.0f);
 		g = std::min(powf(std::max(Filmic(pixel.g) / Filmic(W), 0.0f), 1.0f / 2.2f) * 255, 255.0f);
 		b = std::min(powf(std::max(Filmic(pixel.b) / Filmic(W), 0.0f), 1.0f / 2.2f) * 255, 255.0f);

@@ -1,7 +1,10 @@
 ﻿  Main.cpp
+C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(218,58): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+  (compiling source file 'Main.cpp')
+  
   Generating code
-  1 of 1975 functions (<0.1%) were compiled, the rest were copied from previous compilation.
-    0 functions were new in current compilation
-    14 functions had inline decision re-evaluated but remain unchanged
+  53 of 2147 functions ( 2.5%) were compiled, the rest were copied from previous compilation.
+    37 functions were new in current compilation
+    62 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   RTBase.vcxproj -> C:\Users\u5632744\Desktop\AdvCG\x64\Release\RTBase.exe

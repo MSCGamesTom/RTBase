@@ -1,8 +1,11 @@
 ﻿  test.cpp
+C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(218,58): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+  (compiling source file '/test.cpp')
+  
+C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(23,1): warning C4723: potential divide by 0
 C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(23,1): warning C4723: potential divide by 0
 C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(23,1): warning C4723: potential divide by 0
 C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(22,1): warning C4723: potential divide by 0
-C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(23,1): warning C4723: potential divide by 0
 C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(22,1): warning C4723: potential divide by 0
 C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(23,1): warning C4723: potential divide by 0
 C:\Users\u5632744\Desktop\AdvCG\RTBase\Geometry.h(23,1): warning C4723: potential divide by 0

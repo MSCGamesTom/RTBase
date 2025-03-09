@@ -133,6 +133,7 @@ public:
 								canvas->draw(x, y, r, g, b);
 							}
 						}
+						canvas->present();
 					}
 				});
 		}

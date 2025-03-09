@@ -150,6 +150,10 @@ public:
 		return Vec3(x / w, y / w, z / w, 1.0f / w);
 	}
 	Vec3 operator-() const { return Vec3(-x, -y, -z); }
+
+	float& operator[](int i) { return coords[i]; }
+	const float& operator[](int i) const { return coords[i]; }
+
 	float lengthSq()
 	{
 		return ((x * x) + (y * y) + (z * z));
