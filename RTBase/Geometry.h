@@ -147,7 +147,7 @@ public:
 		t = (t_entry < 0) ? t_exit : t_entry; // If inside the box, use t_exit
 		return true;
 	}
-	// Add code here
+
 	bool rayAABB(const Ray& r)
 	{
 		float t;
@@ -292,7 +292,7 @@ private:
 	struct Bin
 	{
 		AABB bounds;
-		int  count;
+		int count;
 		Bin() : count(0) { bounds.reset(); }
 	};
 
@@ -405,9 +405,7 @@ private:
 		{
 			float costLeft = leftArea[i] * leftCount[i];
 			float costRight = rightArea[i + 1] * rightCount[i + 1];
-			float cost =
-				TRAVERSE_COST +
-				(costLeft + costRight) / parentArea * TRIANGLE_COST;
+			float cost = TRAVERSE_COST + (costLeft + costRight) / parentArea * TRIANGLE_COST;
 
 			if (cost < bestCost)
 			{
@@ -442,6 +440,18 @@ private:
 			}
 		);
 		int mid = (int)(midIter - (indices.begin() + start)) + start;
+
+		// If partitioning fails to split the set (all triangles fall on one side), create a leaf.
+		if (mid == start || mid == end)
+		{
+			triangleIndices.reserve(count);
+			for (int i = start; i < end; i++)
+				triangleIndices.push_back(indices[i]);
+#ifdef DEBUG_BVH
+			debugLeafCount++;
+#endif
+			return;
+		}
 
 		// Create child nodes and recurse
 		l = new BVHNode();
