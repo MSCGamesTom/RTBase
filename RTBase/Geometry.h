@@ -151,8 +151,7 @@ public:
 	bool rayAABB(const Ray& r)
 	{
 		float t;
-		rayAABB(r, t);
-		return true;
+		return rayAABB(r, t);
 	}
 
 	float area()
