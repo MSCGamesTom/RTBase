@@ -34,7 +34,7 @@ public:
 		xprime = (xprime * 2.0f) - 1.0f;
 		yprime = (yprime * 2.0f) - 1.0f;
 		Vec3 dir(xprime, yprime, 1.0f);
-		dir = inverseProjectionMatrix.mulPoint(dir);
+		dir = inverseProjectionMatrix.mulPointAndPerspectiveDivide(dir);
 		dir = camera.mulVec(dir);
 		dir = dir.normalize();
 		return Ray(origin, dir);

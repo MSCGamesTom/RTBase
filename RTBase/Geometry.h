@@ -347,7 +347,7 @@ private:
 #endif
 			return;
         }
-		// 5. Build bins along that axis.
+		// Build bins along that axis.
 		Bin bins[BUILD_BINS];
 		const float invExtent = 1.0f / extent[axis];
 
@@ -368,11 +368,11 @@ private:
 			bins[b].bounds.extend(triangles[idx].vertices[2].p);
 		}
 
-		// 6. Compute prefix and suffix for areas and counts
-		float   leftArea[BUILD_BINS];
-		float   rightArea[BUILD_BINS];
-		int     leftCount[BUILD_BINS];
-		int     rightCount[BUILD_BINS];
+		//Compute prefix and suffix for areas and counts
+		float leftArea[BUILD_BINS];
+		float rightArea[BUILD_BINS];
+		int leftCount[BUILD_BINS];
+		int rightCount[BUILD_BINS];
 
 		AABB tempBox;
 		tempBox.reset();
@@ -395,7 +395,7 @@ private:
 			rightCount[i] = tempCount;
 		}
 
-		// 7. Find best split among bin boundaries
+		// Find best split among bin boundaries
 		float parentArea = bounds.area();
 		// Leaf cost = c_trav + (N * c_isect), for comparison
 		float leafCost = TRAVERSE_COST + count * TRIANGLE_COST;
@@ -429,9 +429,8 @@ private:
 			return;
 		}
 
-		// 8. Partition the triangles according to the best split boundary
-		float splitCoord = centroidBounds.min[axis]
-			+ (float)(bestSplit + 1) * (extent[axis] / BUILD_BINS);
+		// Partition the triangles according to the best split boundary
+		float splitCoord = centroidBounds.min[axis] + (float)(bestSplit + 1) * (extent[axis] / BUILD_BINS);
 
 		// Partition the index array so that all centroids < splitCoord go left
 		// and the rest go right.
@@ -445,7 +444,7 @@ private:
 		);
 		int mid = (int)(midIter - (indices.begin() + start)) + start;
 
-		// 9. Create child nodes and recurse
+		// Create child nodes and recurse
 		l = new BVHNode();
 		r = new BVHNode();
 #ifdef DEBUG_BVH

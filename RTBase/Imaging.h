@@ -140,7 +140,7 @@ class BoxFilter : public ImageFilter
 public:
 	float filter(float x, float y) const
 	{
-		if (fabsf(x) < 0.5f && fabs(y) < 0.5f)
+		if (fabsf(x) <= 0.5f && fabs(y) <= 0.5f)
 		{
 			return 1.0f;
 		}
@@ -149,6 +149,28 @@ public:
 	int size() const
 	{
 		return 0;
+	}
+};
+
+class GaussianFilter : public ImageFilter
+{
+	const int radii = 1;
+	const float alpha = 1.0f;
+	const float t2 = std::exp(-alpha * SQ(radii));
+public:
+	float Gaussian(float d) const
+	{
+		return std::exp(-alpha * SQ(d)) - t2;
+	}
+
+	float filter(float x, float y) const
+	{
+		return Gaussian(x) * Gaussian(y);
+	}
+
+	int size() const
+	{
+		return radii;
 	}
 };
 
@@ -169,9 +191,27 @@ public:
 	float F = 0.30;
 	float W = 11.2;
 
-	void splat(const float x, const float y, const Colour& L)
-	{
-		// Code to splat a smaple with colour L into the image plane using an ImageFilter
+	void splat(const float x, const float y, const Colour& L) {
+		float filterWeights[25]; // Storage to cache weights
+		unsigned int indices[25]; // Store indices to minimize computations 
+		unsigned int used = 0;
+		float total = 0;
+		int size = filter->size();
+		for (int i = -size; i <= size; i++) {
+			for (int j = -size; j <= size; j++) {
+				int px = (int)x + j;
+				int py = (int)y + i;
+				if (px >= 0 && px < width && py >= 0 && py < height) {
+					indices[used] = (py * width) + px;
+					filterWeights[used] = filter->filter(px - x, py - y);
+					total += filterWeights[used];
+					used++;
+				}
+			}
+		}
+		for (int i = 0; i < used; i++) {
+			film[indices[i]] = film[indices[i]] + (L * filterWeights[i] / total);
+		}
 	}
 
 	float Filmic(float x) {
