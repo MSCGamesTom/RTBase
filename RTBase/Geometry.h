@@ -46,7 +46,7 @@ public:
 	}
 };
 
-#define EPSILON 0.001f
+#define EPSILON 1e-7f
 
 class Triangle
 {
@@ -57,18 +57,28 @@ public:
 	Vec3 n; // Geometric Normal
 	float area; // Triangle area
 	float d; // For ray triangle if needed
+	Vec3 maxP, minP;
+	Vec3 center;
 	unsigned int materialIndex;
 	void init(Vertex v0, Vertex v1, Vertex v2, unsigned int _materialIndex)
 	{
 		materialIndex = _materialIndex;
+
 		vertices[0] = v0;
 		vertices[1] = v1;
 		vertices[2] = v2;
-		e1 = vertices[2].p - vertices[1].p;
-		e2 = vertices[0].p - vertices[2].p;
+
+		e1 = vertices[0].p - vertices[2].p;
+		e2 = vertices[1].p - vertices[2].p;
+
 		n = e1.cross(e2).normalize();
 		area = e1.cross(e2).length() * 0.5f;
 		d = Dot(n, vertices[0].p);
+
+		maxP = Max(vertices[0].p, Max(vertices[1].p, vertices[2].p));
+		maxP = Min(vertices[0].p, Min(vertices[1].p, vertices[2].p));
+
+		center = minP + (maxP - minP) * 0.5f;
 	}
 	Vec3 centre() const
 	{
@@ -77,16 +87,31 @@ public:
 
 	bool rayIntersect(const Ray& r, float& t, float& u, float& v) const
 	{
-		float denom = Dot(n, r.dir);
-		if (denom == 0) { return false; }
-		t = (d - Dot(n, r.o)) / denom;
-		if (t < 0) { return false; }
-		Vec3 p = r.at(t);
-		float invArea = 1.0f / Dot(e1.cross(e2), n);
-		u = Dot(e1.cross(p - vertices[1].p), n) * invArea;
-		if (u < 0 || u > 1.0f) { return false; }
-		v = Dot(e2.cross(p - vertices[2].p), n) * invArea;
-		if (v < 0 || (u + v) > 1.0f) { return false; }
+		Vec3 p = Cross(r.dir, e2);
+		float det = p.dot(e1);
+
+		if (std::abs(det) < EPSILON)
+			return false;
+
+		float invDet = 1.0f / det;
+		Vec3 T = r.o - vertices[2].p;
+
+		u = T.dot(p) * invDet;
+
+		if ((u < 0 && abs(u) > EPSILON) || (u > 1 && abs(u - 1) > EPSILON))
+			return false;
+
+		p = Cross(T, e1);
+		v = r.dir.dot(p) * invDet;
+
+		if ((v < 0 && abs(v) > EPSILON) || (u + v > 1 && abs(u + v - 1) > EPSILON))
+			return false;
+
+		t = e2.dot(p) * invDet;
+
+		if (t < EPSILON)
+			return false;
+
 		return true;
 	}
 	void interpolateAttributes(const float alpha, const float beta, const float gamma, Vec3& interpolatedNormal, float& interpolatedU, float& interpolatedV) const
@@ -99,7 +124,16 @@ public:
 	// Add code here
 	Vec3 sample(Sampler* sampler, float& pdf)
 	{
-		return Vec3(0, 0, 0);
+		float r1 = sampler->next();
+		float r2 = sampler->next();
+		
+		float alpha = 1 - sqrt(r1);
+		float beta = r2 * sqrt(r1);
+		float gamma = 1 - (alpha + beta);
+		
+		pdf = 1 / area;
+		
+		return Vec3(alpha * vertices[0].p.x, beta * vertices[1].p.y, gamma * vertices[2].p.z);
 	}
 	Vec3 gNormal()
 	{

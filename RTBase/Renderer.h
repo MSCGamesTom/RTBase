@@ -45,6 +45,14 @@ public:
 			return Colour(0.0f, 0.0f, 0.0f);
 		}
 		// Compute direct lighting here
+		float pmf, pdf;
+		Colour emittedColour;
+		Light* light = scene->sampleLight(sampler, pmf);
+
+		if (light->isArea())
+		{
+			Vec3 wi = light->sample(shadingData, sampler, emittedColour, pdf);
+		}
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
 	Colour pathTrace(Ray& r, Colour& pathThroughput, int depth, Sampler* sampler)
@@ -54,6 +62,18 @@ public:
 	}
 	Colour direct(Ray& r, Sampler* sampler)
 	{
+		//IntersectionData intersection = scene->traverse(r);
+		//ShadingData shadingData = scene->calculateShadingData(intersection, r);
+		//if (shadingData.t < FLT_MAX)
+		//{
+		//	if (shadingData.bsdf->isLight())
+		//	{
+		//		return computeDirect(shadingData, sampler);
+		//	}
+		//	return computeDirect(shadingData, sampler);
+		//}
+		//return computeDirect(shadingData, sampler);
+
 		// Compute direct lighting for an image sampler here
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
@@ -124,9 +144,10 @@ public:
 								float px = x + 0.5f;
 								float py = y + 0.5f;
 								Ray ray = scene->camera.generateRay(px, py);
-								//Colour col = viewNormals(ray);
-								Colour col = albedo(ray);
-								film->splat(px, py, col);
+								Colour col = viewNormals(ray);
+								//Colour col = albedo(ray);
+								film->splat(x, y, col);
+								//film->splat(px, py, col);
 								unsigned char r = (unsigned char)(col.r * 255);
 								unsigned char g = (unsigned char)(col.g * 255);
 								unsigned char b = (unsigned char)(col.b * 255);
@@ -134,7 +155,7 @@ public:
 								canvas->draw(x, y, r, g, b);
 							}
 						}
-						canvas->present();
+						//canvas->present();
 
 					}
 				});

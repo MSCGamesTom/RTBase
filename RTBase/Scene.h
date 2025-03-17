@@ -54,8 +54,8 @@ public:
 	void build()
 	{
 
-		bvh = new BVHNode();
-		bvh->build(triangles);
+		//bvh = new BVHNode();
+		//bvh->build(triangles);
 
 		// Do not touch the code below this line!
 		// Build light list
@@ -72,32 +72,34 @@ public:
 	}
 	IntersectionData traverse(const Ray& ray)
 	{
-		//IntersectionData intersection;
-		//intersection.t = FLT_MAX;
-		//for (int i = 0; i < triangles.size(); i++)
-		//{
-		//	float t;
-		//	float u;
-		//	float v;
-		//	if (triangles[i].rayIntersect(ray, t, u, v))
-		//	{
-		//		if (t < intersection.t)
-		//		{
-		//			intersection.t = t;
-		//			intersection.ID = i;
-		//			intersection.alpha = u;
-		//			intersection.beta = v;
-		//			intersection.gamma = 1.0f - (u + v);
-		//		}
-		//	}
-		//}
-		//return intersection;
+		IntersectionData intersection;
+		intersection.t = FLT_MAX;
+		for (int i = 0; i < triangles.size(); i++)
+		{
+			float t;
+			float u;
+			float v;
+			if (triangles[i].rayIntersect(ray, t, u, v))
+			{
+				if (t < intersection.t)
+				{
+					intersection.t = t;
+					intersection.ID = i;
+					intersection.alpha = u;
+					intersection.beta = v;
+					intersection.gamma = 1.0f - (u + v);
+				}
+			}
+		}
+		return intersection;
 
-		return bvh->traverse(ray, triangles);
+		//return bvh->traverse(ray, triangles);
 	}
 	Light* sampleLight(Sampler* sampler, float& pmf)
 	{
-		return NULL;
+		float r1 = sampler->next();
+		pmf = 1.f / (float)lights.size();
+		return lights[std::min((int)(r1 * lights.size()), (int)(lights.size() - 1))];
 	}
 	// Do not modify any code below this line
 	void init(std::vector<Triangle> meshTriangles, std::vector<BSDF*> meshMaterials, Light* _background)
