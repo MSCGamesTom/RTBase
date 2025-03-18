@@ -76,7 +76,7 @@ public:
 		d = Dot(n, vertices[0].p);
 
 		maxP = Max(vertices[0].p, Max(vertices[1].p, vertices[2].p));
-		maxP = Min(vertices[0].p, Min(vertices[1].p, vertices[2].p));
+		minP = Min(vertices[0].p, Min(vertices[1].p, vertices[2].p));
 
 		center = minP + (maxP - minP) * 0.5f;
 	}
@@ -133,7 +133,9 @@ public:
 		
 		pdf = 1 / area;
 		
-		return Vec3(alpha * vertices[0].p.x, beta * vertices[1].p.y, gamma * vertices[2].p.z);
+		Vec3 p = vertices[0].p * alpha + vertices[1].p * beta + vertices[2].p * gamma;
+
+		return p;
 	}
 	Vec3 gNormal()
 	{
@@ -146,6 +148,7 @@ class AABB
 public:
 	Vec3 max;
 	Vec3 min;
+	Vec3 center;
 	AABB()
 	{
 		reset();
@@ -154,6 +157,7 @@ public:
 	{
 		max = Vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 		min = Vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+		center = (min + max) * 0.5f;
 	}
 	void extend(const Vec3 p)
 	{
@@ -164,6 +168,11 @@ public:
 	{
 		extend(other.min);
 		extend(other.max);
+	}
+	void extend(Triangle triangle) {
+		extend(triangle.vertices[0].p);
+		extend(triangle.vertices[1].p);
+		extend(triangle.vertices[2].p);
 	}
 	// Add code here
 	bool rayAABB(const Ray& r, float& t)
