@@ -5,7 +5,10 @@ C:\Users\u5632744\Desktop\test-AdvCG\RTBase\Sampling.h(40,19): warning C4305: 'r
 C:\Users\u5632744\Desktop\test-AdvCG\RTBase\Sampling.h(60,19): warning C4305: 'return': truncation from 'double' to 'float'
   (compiling source file 'Main.cpp')
   
-C:\Users\u5632744\Desktop\test-AdvCG\RTBase\Geometry.h(268,58): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\u5632744\Desktop\test-AdvCG\RTBase\Geometry.h(327,33): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  (compiling source file 'Main.cpp')
+  
+C:\Users\u5632744\Desktop\test-AdvCG\RTBase\Geometry.h(365,31): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
   (compiling source file 'Main.cpp')
   
 C:\Users\u5632744\Desktop\test-AdvCG\RTBase\Imaging.h(186,12): warning C4305: 'initializing': truncation from 'double' to 'float'

@@ -1,13 +1,11 @@
-﻿  pch.cpp
-  test.cpp
+﻿  test.cpp
 C:\Users\u5632744\Desktop\test-AdvCG\RTBase\Sampling.h(40,19): warning C4305: 'return': truncation from 'double' to 'float'
   (compiling source file '/test.cpp')
   
 C:\Users\u5632744\Desktop\test-AdvCG\RTBase\Sampling.h(60,19): warning C4305: 'return': truncation from 'double' to 'float'
   (compiling source file '/test.cpp')
   
-C:\Users\u5632744\Desktop\test-AdvCG\RTBase\Geometry.h(277,58): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\u5632744\Desktop\test-AdvCG\RTBase\Geometry.h(290,58): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
   (compiling source file '/test.cpp')
   
-  LINK : C:\Users\u5632744\Desktop\test-AdvCG\x64\Debug\Testing.exe not found or not built by the last incremental link; performing full link
   Testing.vcxproj -> C:\Users\u5632744\Desktop\test-AdvCG\x64\Debug\Testing.exe
