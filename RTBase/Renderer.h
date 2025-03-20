@@ -197,7 +197,7 @@ public:
 						int endY = min(startY + tileSize, (int)film->height);
 
 						// Get the random sampler for this thread
-						MTRandom& sampler = samplers[i];
+						MTRandom* sampler = &samplers[i];
 
 						// Render all pixels in [startX,endX) x [startY,endY)
 						for (int y = startY; y < endY; y++)
@@ -207,8 +207,9 @@ public:
 								float px = x + 0.5f;
 								float py = y + 0.5f;
 								Ray ray = scene->camera.generateRay(px, py);
-								Colour col = viewNormals(ray);
+								//Colour col = viewNormals(ray);
 								//Colour col = albedo(ray);
+								Colour col = direct(ray, sampler);
 								film->splat(x, y, col);
 								//film->splat(px, py, col);
 								unsigned char r = (unsigned char)(col.r * 255);
@@ -218,7 +219,7 @@ public:
 								canvas->draw(x, y, r, g, b);
 							}
 						}
-						canvas->present();
+						//canvas->present();
 
 					}
 				});

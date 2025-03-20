@@ -71,6 +71,8 @@ public:
 			indices[i] = i;
 		}
 
+		std::cout << "Number of Triangles passed in: " << triangles.size() << std::endl;
+
 		// Build the BVH using the indices
 		bvh->build(triangles, indices, 0);
 
