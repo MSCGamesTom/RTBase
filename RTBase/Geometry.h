@@ -47,8 +47,8 @@ public:
 	}
 };
 
-#define EPSILON 1e-7f
-#define MollEPSILON 0.0001f
+#define MollEPSILON 1e-7f
+#define EPSILON 0.001f
 
 class Triangle
 {
@@ -92,7 +92,7 @@ public:
 		Vec3 p = Cross(r.dir, e2);
 		float det = p.dot(e1);
 
-		if (std::abs(det) < EPSILON)
+		if (std::abs(det) < MollEPSILON)
 			return false;
 
 		float invDet = 1.0f / det;
@@ -100,18 +100,18 @@ public:
 
 		u = T.dot(p) * invDet;
 
-		if ((u < 0 && abs(u) > EPSILON) || (u > 1 && abs(u - 1) > EPSILON))
+		if ((u < 0 && abs(u) > MollEPSILON) || (u > 1 && abs(u - 1) > MollEPSILON))
 			return false;
 
 		p = Cross(T, e1);
 		v = r.dir.dot(p) * invDet;
 
-		if ((v < 0 && abs(v) > EPSILON) || (u + v > 1 && abs(u + v - 1) > EPSILON))
+		if ((v < 0 && abs(v) > MollEPSILON) || (u + v > 1 && abs(u + v - 1) > MollEPSILON))
 			return false;
 
 		t = e2.dot(p) * invDet;
 
-		if (t < EPSILON)
+		if (t < MollEPSILON)
 			return false;
 
 		return true;

@@ -49,12 +49,12 @@ public:
 	std::vector<Light*> lights;
 	Light* background = NULL;
 	BVHNode* bvh = NULL;
+	//BVHTree bvhTree;
 	Camera camera;
 	AABB bounds;
 
 	void build()
 	{
-
 		// Free existing BVH if any
 		if (bvh)
 		{
@@ -70,8 +70,6 @@ public:
 		{
 			indices[i] = i;
 		}
-
-		std::cout << "Number of Triangles passed in: " << triangles.size() << std::endl;
 
 		// Build the BVH using the indices
 		bvh->build(triangles, indices, 0);
@@ -112,6 +110,8 @@ public:
 		//}
 		//return intersection;
 
+		/*return bvhTree.traverse(ray, triangles);*/
+
 		return bvh->traverse(ray, triangles);
 	}
 	Light* sampleLight(Sampler* sampler, float& pmf)
@@ -147,22 +147,23 @@ public:
 		float maxT = dir.length() - (2.0f * EPSILON);
 		dir = dir.normalize();
 		ray.init(p1 + (dir * EPSILON), dir);
-		//return bvh->traverseVisible(ray, triangles, maxT);
+		//return bvhTree.traverseVisible(ray, maxT);
+		return bvh->traverseVisible(ray, triangles, maxT);
 
-		for (int i = 0; i < triangles.size(); i++)
-		{
-			float t;
-			float u;
-			float v;
-			if (triangles[i].rayIntersect(ray, t, u, v))
-			{
-				if (t < maxT)
-				{
-					return false;
-				}
-			}
-		}
-		return true;
+		//for (int i = 0; i < triangles.size(); i++)
+		//{
+		//	float t;
+		//	float u;
+		//	float v;
+		//	if (triangles[i].rayIntersect(ray, t, u, v))
+		//	{
+		//		if (t < maxT)
+		//		{
+		//			return false;
+		//		}
+		//	}
+		//}
+		//return true;
 	}
 	Colour emit(Triangle* light, ShadingData shadingData, Vec3 wi)
 	{

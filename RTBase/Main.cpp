@@ -1,4 +1,4 @@
-#define DEBUG_BVH
+//#define DEBUG_BVH
 #include "GEMLoader.h"
 #include "Renderer.h"
 #include "SceneLoader.h"
@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
 	// runTests()
 	
 	// Initialize default parameters
-	std::string sceneName = "bathroom";
+	std::string sceneName = "MaterialsScene";
 	std::string filename = "GI.hdr";
 	unsigned int SPP = 8192;
 

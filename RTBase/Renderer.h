@@ -117,9 +117,7 @@ public:
 			}
 			Colour bsdf;
 			float pdf;
-			Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next());
-			pdf = SamplingDistributions::cosineHemispherePDF(wi);
-			wi = shadingData.frame.toWorld(wi);
+			Vec3 wi = shadingData.bsdf->sample(shadingData, sampler, bsdf, pdf);
 			bsdf = shadingData.bsdf->evaluate(shadingData, wi);
 			pathThroughput = pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) / pdf;
 			r.init(shadingData.x + (wi * EPSILON), wi);
@@ -205,17 +203,18 @@ public:
 						{
 							for (int x = startX; x < endX; x++)
 							{
-								float px = x + 0.5f;
-								float py = y + 0.5f;
-								Ray ray = scene->camera.generateRay(px, py);
-								//Colour col = viewNormals(ray);
-								//Colour col = albedo(ray);
-								Colour col = direct(ray, sampler);
-								film->splat(x, y, col);
-								//film->splat(px, py, col);
-								unsigned char r = (unsigned char)(col.r * 255);
-								unsigned char g = (unsigned char)(col.g * 255);
-								unsigned char b = (unsigned char)(col.b * 255);
+								//float px = x + 0.5f;
+								//float py = y + 0.5f;
+								float tx = x + sampler->next();
+								float ty = y + sampler->next();
+								Ray ray = scene->camera.generateRay(tx, ty);
+								//Colour norm = viewNormals(ray);
+								//Colour alb = albedo(ray);
+								//Colour dir = direct(ray, sampler);
+								Colour th(1.0f,1.0f,1.0f);
+								Colour pathT = pathTrace(ray, th, 0, sampler);
+								film->splat(tx, ty, pathT);
+								unsigned char r, g, b;
 								film->tonemap(x, y, r, g, b);
 								canvas->draw(x, y, r, g, b);
 							}
