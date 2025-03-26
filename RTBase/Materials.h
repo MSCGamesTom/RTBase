@@ -35,8 +35,19 @@ class ShadingHelper
 public:
 	static float fresnelDielectric(float cosTheta, float iorInt, float iorExt)
 	{
-		// Add code here
-		return 1.0f;
+		float etaI = iorExt;
+		float etaT = iorInt;
+		if (cosTheta < 0.0f) {
+			std::swap(etaI, etaT);
+			cosTheta = -cosTheta;
+		}
+		float eta = etaI / etaT;
+		float sinT2 = eta * eta * (1.0f - cosTheta * cosTheta);
+		if (sinT2 > 1.0f) return 1.0f; // Total internal reflection
+		float cosT = sqrtf(1.0f - sinT2);
+		float rParl = (etaT * cosTheta - etaI * cosT) / (etaT * cosTheta + etaI * cosT);
+		float rPerp = (etaI * cosTheta - etaT * cosT) / (etaI * cosTheta + etaT * cosT);
+		return 0.5f * (rParl * rParl + rPerp * rPerp);
 	}
 	static Colour fresnelConductor(float cosTheta, Colour ior, Colour k)
 	{
@@ -45,18 +56,21 @@ public:
 	}
 	static float lambdaGGX(Vec3 wi, float alpha)
 	{
-		// Add code here
-		return 1.0f;
+		float cosTheta = fabsf(wi.z);
+		float tanTheta2 = (1.0f - cosTheta * cosTheta) / (cosTheta * cosTheta);
+		return (-1.0f + sqrtf(1.0f + alpha * alpha * tanTheta2)) * 0.5f;
 	}
 	static float Gggx(Vec3 wi, Vec3 wo, float alpha)
 	{
-		// Add code here
-		return 1.0f;
+		return 1.0f / (1.0f + lambdaGGX(wi, alpha) + lambdaGGX(wo, alpha));
 	}
 	static float Dggx(Vec3 h, float alpha)
 	{
-		// Add code here
-		return 1.0f;
+		float cosThetaH = fabsf(h.z);
+		float cosThetaH2 = cosThetaH * cosThetaH;
+		float alpha2 = alpha * alpha;
+		float denom = cosThetaH2 * (alpha2 - 1.0f) + 1.0f;
+		return alpha2 / (M_PI * denom * denom);
 	}
 };
 
@@ -230,23 +244,47 @@ public:
 	}
 	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
-		// Replace this with Glass sampling code
-		Vec3 wi = SamplingDistributions::cosineSampleHemisphere(sampler->next(), sampler->next());
-		pdf = wi.z / M_PI;
-		reflectedColour = albedo->sample(shadingData.tu, shadingData.tv) / M_PI;
-		wi = shadingData.frame.toWorld(wi);
-		return wi;
+		Vec3 woLocal = shadingData.frame.toLocal(shadingData.wo);
+		float cosThetaO = std::max(-1.0f, std::min(woLocal.z, 1.0f));
+
+		bool entering = cosThetaO > 0.0f;
+		float etaI = entering ? extIOR : intIOR;
+		float etaT = entering ? intIOR : extIOR;
+		float eta = etaI / etaT;
+
+		float fresnel = ShadingHelper::fresnelDielectric(cosThetaO, intIOR, extIOR);
+
+		if (sampler->next() < fresnel)
+		{
+			Vec3 wi = Vec3(-woLocal.x, -woLocal.y, woLocal.z);
+			pdf = fresnel;
+			reflectedColour = albedo->sample(shadingData.tu, shadingData.tv) * fresnel;
+			return shadingData.frame.toWorld(wi);
+		}
+		else
+		{
+			float sin2ThetaT = eta * eta * (1.0f - cosThetaO * cosThetaO);
+			if (sin2ThetaT >= 1.0f)
+			{
+				Vec3 wi = Vec3(-woLocal.x, -woLocal.y, woLocal.z);
+				pdf = 1.0f;
+				reflectedColour = albedo->sample(shadingData.tu, shadingData.tv);
+				return shadingData.frame.toWorld(wi);
+			}
+			float cosThetaT = sqrtf(1.0f - sin2ThetaT);
+			Vec3 wt = Vec3(-eta * woLocal.x, -eta * woLocal.y, (entering ? -cosThetaT : cosThetaT));
+			pdf = 1.0f - fresnel;
+			reflectedColour = albedo->sample(shadingData.tu, shadingData.tv);
+			return shadingData.frame.toWorld(wt);
+		}
 	}
 	Colour evaluate(const ShadingData& shadingData, const Vec3& wi)
 	{
-		// Replace this with Glass evaluation code
-		return albedo->sample(shadingData.tu, shadingData.tv) / M_PI;
+		return Colour(0.f, 0.f, 0.f);
 	}
 	float PDF(const ShadingData& shadingData, const Vec3& wi)
 	{
-		// Replace this with GlassPDF
-		Vec3 wiLocal = shadingData.frame.toLocal(wi);
-		return SamplingDistributions::cosineHemispherePDF(wiLocal);
+		return 0.f;
 	}
 	bool isPureSpecular()
 	{
