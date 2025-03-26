@@ -46,43 +46,38 @@ public:
 		// Sample a light
 		float pmf;
 		Light* light = scene->sampleLight(sampler, pmf);
+
 		// Sample a point on the light
-		float pdf;
+		float lightPdf;
 		Colour emitted;
-		Vec3 p = light->sample(shadingData, sampler, emitted, pdf);
+		Vec3 p = light->sample(shadingData, sampler, emitted, lightPdf);
+		Vec3 wi;
+		float G = 0.0f;
+		bool visible = false;
+
 		if (light->isArea())
 		{
 			// Calculate GTerm
-			Vec3 wi = p - shadingData.x;
+			wi = p - shadingData.x;
 			float l = wi.lengthSq();
 			wi = wi.normalize();
-			float GTerm = (max(Dot(wi, shadingData.sNormal), 0.0f) * max(-Dot(wi, light->normal(shadingData, wi)), 0.0f)) / l;
-			if (GTerm > 0)
-			{
-				// Trace
-				if (scene->visible(shadingData.x, p))
-				{
-					// Shade
-					return shadingData.bsdf->evaluate(shadingData, wi) * emitted * GTerm / (pmf * pdf);
-				}
-			}
+			G = (max(Dot(wi, shadingData.sNormal), 0.0f) * max(-Dot(wi, light->normal(shadingData, wi)), 0.0f)) / l;
+			visible = G > 0 && scene->visible(shadingData.x, p);
 		}
 		else
 		{
 			// Calculate GTerm
-			Vec3 wi = p;
+			wi = p;
 			float GTerm = max(Dot(wi, shadingData.sNormal), 0.0f);
-			if (GTerm > 0)
-			{
-				// Trace
-				if (scene->visible(shadingData.x, shadingData.x + (p * 10000.0f)))
-				{
-					// Shade
-					return shadingData.bsdf->evaluate(shadingData, wi) * emitted * GTerm / (pmf * pdf);
-				}
-			}
+			visible = G > 0 && scene->visible(shadingData.x, shadingData.x + wi * 10000.0f);
 		}
-		return Colour(0.0f, 0.0f, 0.0f);
+		if (!visible)
+			return Colour(0.0f, 0.0f, 0.0f);
+
+		float bsdfPdf = shadingData.bsdf->PDF(shadingData, wi);
+		float weight = (lightPdf + bsdfPdf > 0.0f) ? lightPdf / (lightPdf + bsdfPdf) : 0.0f;
+		Colour f = shadingData.bsdf->evaluate(shadingData, wi);
+		return f * emitted * G * weight / (pmf * lightPdf);
 	}
 	Colour pathTrace(Ray& r, Colour& pathThroughput, int depth, Sampler* sampler, bool canHitLight = true, Vec3 prevWi = Vec3(), float prevPdf = -1.0f)
 	{
@@ -93,20 +88,8 @@ public:
 			if (shadingData.bsdf->isLight())
 			{
 				if (canHitLight == true)
-				{
-					Colour emission = shadingData.bsdf->emit(shadingData, shadingData.wo);
-
-					// MIS: Combine BSDF and environment PDF
-					float lightPdf = prevPdf > 0.0f ? prevPdf : 0.0f;
-					float bsdfPdf = shadingData.bsdf->PDF(shadingData, prevWi);
-					float weight = (lightPdf + bsdfPdf) > 0.0f ? bsdfPdf / (bsdfPdf + lightPdf) : 1.0f;
-
-					return pathThroughput * emission * weight;
-				}
-				else
-				{
-					return Colour(0.0f, 0.0f, 0.0f);
-				}
+					return pathThroughput * shadingData.bsdf->emit(shadingData, shadingData.wo);
+				return Colour(0.0f, 0.0f, 0.0f);
 			}
 			Colour direct = pathThroughput * computeDirect(shadingData, sampler);
 			if (depth > MAX_DEPTH)
@@ -123,22 +106,35 @@ public:
 				return direct;
 			}
 			Colour bsdf;
-			float pdf;
-			Vec3 wi = shadingData.bsdf->sample(shadingData, sampler, bsdf, pdf);
+			float bsdfPdf;
+			Vec3 wi = shadingData.bsdf->sample(shadingData, sampler, bsdf, bsdfPdf);
 			bsdf = shadingData.bsdf->evaluate(shadingData, wi);
-			pathThroughput = pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) / pdf;
-			r.init(shadingData.x + (wi * EPSILON), wi);
-			return (direct + pathTrace(r, pathThroughput, depth + 1, sampler, shadingData.bsdf->isPureSpecular(), -r.dir, pdf));
-		}
-		if (canHitLight && scene->background)
-		{
-			Colour Le = scene->background->evaluate(r.dir);
-			float envPdf = scene->background->PDF({}, r.dir);
-			float bsdfPdf = prevPdf > 0.0f ? prevPdf : 0.0f;
-			float weight = (envPdf + bsdfPdf) > 0.0f ? bsdfPdf / (envPdf + bsdfPdf) : 1.0f;
-			return pathThroughput * Le * weight;
+			pathThroughput = pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) / bsdfPdf;
+
+			Ray nextRay(shadingData.x + (wi * EPSILON), wi);
+			IntersectionData hit = scene->traverse(nextRay);
+			ShadingData nextData = scene->calculateShadingData(hit, nextRay);
+
+			if (hit.t < FLT_MAX && nextData.bsdf->isLight() && !shadingData.bsdf->isPureSpecular())
+			{
+				Colour Le = nextData.bsdf->emit(nextData, nextData.wo);
+				float lightPdf = nextData.bsdf->PDF(nextData, -wi);
+				float weight = (lightPdf + bsdfPdf > 0.0f) ? bsdfPdf / (lightPdf + bsdfPdf) : 0.0f;
+				return direct + pathThroughput * Le * weight;
+			}
+			else if (hit.t >= FLT_MAX && scene->background && !shadingData.bsdf->isPureSpecular())
+			{
+				Colour Le = scene->background->evaluate(wi);
+				float lightPdf = scene->background->PDF({}, wi);
+				float weight = (lightPdf + bsdfPdf > 0.0f) ? bsdfPdf / (lightPdf + bsdfPdf) : 0.0f;
+				return direct + pathThroughput * Le * weight;
+			}
+
+			return direct + pathTrace(nextRay, pathThroughput, depth + 1, sampler, shadingData.bsdf->isPureSpecular());
 		}
 
+		if (scene->background)
+			return pathThroughput * scene->background->evaluate(r.dir);
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
 	Colour direct(Ray& r, Sampler* sampler)
