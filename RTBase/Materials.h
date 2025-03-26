@@ -56,21 +56,15 @@ public:
 	}
 	static float lambdaGGX(Vec3 wi, float alpha)
 	{
-		float cosTheta = fabsf(wi.z);
-		float tanTheta2 = (1.0f - cosTheta * cosTheta) / (cosTheta * cosTheta);
-		return (-1.0f + sqrtf(1.0f + alpha * alpha * tanTheta2)) * 0.5f;
+
 	}
 	static float Gggx(Vec3 wi, Vec3 wo, float alpha)
 	{
-		return 1.0f / (1.0f + lambdaGGX(wi, alpha) + lambdaGGX(wo, alpha));
+
 	}
 	static float Dggx(Vec3 h, float alpha)
 	{
-		float cosThetaH = fabsf(h.z);
-		float cosThetaH2 = cosThetaH * cosThetaH;
-		float alpha2 = alpha * alpha;
-		float denom = cosThetaH2 * (alpha2 - 1.0f) + 1.0f;
-		return alpha2 / (M_PI * denom * denom);
+
 	}
 };
 
