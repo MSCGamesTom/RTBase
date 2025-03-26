@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core.h"
 #include "Geometry.h"
@@ -12,6 +12,122 @@ class SceneBounds
 public:
 	Vec3 sceneCentre;
 	float sceneRadius;
+};
+
+class TabulatedDistribution
+{
+public:
+	unsigned int width = 0;
+	unsigned int height = 0;
+
+	std::vector<float> luminanceMap;
+	std::vector<float> marginalCDF;
+	std::vector<std::vector<float>> conditionalCDF;
+
+	void clear()
+	{
+		luminanceMap.clear();
+		marginalCDF.clear();
+		conditionalCDF.clear();
+	}
+
+	void init(Texture* texture)
+	{
+		clear();
+
+		width = texture->width;
+		height = texture->height;
+
+		luminanceMap.resize(width * height);
+		marginalCDF.resize(height);
+		conditionalCDF.resize(height, std::vector<float>(width));
+
+		float total = 0.0f;
+
+		for (unsigned int y = 0; y < height; ++y)
+		{
+			float sinWeight = sinf(((float)y + 0.5f) / height * M_PI);
+			float rowSum = 0.0f;
+
+			for (unsigned int x = 0; x < width; ++x)
+			{
+				unsigned int idx = y * width + x;
+				luminanceMap[idx] = texture->texels[idx].Lum() * sinWeight;
+				rowSum += luminanceMap[idx];
+				conditionalCDF[y][x] = rowSum;
+			}
+
+			marginalCDF[y] = rowSum;
+			total += rowSum;
+		}
+
+		for (auto& row : conditionalCDF)
+		{
+			float rowTotal = row.back();
+			if (rowTotal > 0.0f)
+			{
+				for (auto& val : row)
+					val /= rowTotal;
+				row.back() = 1.0f;
+			}
+		}
+
+		if (total > 0.0f)
+		{
+			float invTotal = 1.0f / total;
+			float cumulative = 0.0f;
+			for (auto& val : marginalCDF)
+			{
+				cumulative += val * invTotal;
+				val = cumulative;
+			}
+			marginalCDF.back() = 1.0f;
+		}
+	}
+
+	static int binarySearch(const std::vector<float>& cdf, int size, float value)
+	{
+		int low = 0, high = size - 1;
+		while (low < high)
+		{
+			int mid = (low + high) / 2;
+			if (cdf[mid] < value)
+				low = mid + 1;
+			else
+				high = mid;
+		}
+		return low;
+	}
+
+	float getPdf(int row, int col)
+	{
+		float marginal = (row == 0) ? marginalCDF[row] : (marginalCDF[row] - marginalCDF[row - 1]);
+		float conditional = (col == 0) ? conditionalCDF[row][col] : (conditionalCDF[row][col] - conditionalCDF[row][col - 1]);
+		float result = marginal * conditional * width * height;
+		return (result < EPSILON) ? EPSILON : result;
+	}
+
+	Vec3 sample(Sampler* sampler, float& u, float& v, float& pdf)
+	{
+		int row = binarySearch(marginalCDF, height, sampler->next());
+		int col = binarySearch(conditionalCDF[row], width, sampler->next());
+
+		u = (col + 0.5f) / width;
+		v = (row + 0.5f) / height;
+
+		pdf = getPdf(row, col);
+
+		float theta = v * M_PI;
+		float phi = u * 2.0f * M_PI;
+
+		pdf *= sinf(theta);
+
+		return Vec3(
+			sinf(theta) * cosf(phi),
+			cosf(theta),
+			sinf(theta) * sinf(phi)
+		);
+	}
 };
 
 class Light
@@ -131,16 +247,17 @@ class EnvironmentMap : public Light
 {
 public:
 	Texture* env;
+	TabulatedDistribution distribution;
 	EnvironmentMap(Texture* _env)
 	{
 		env = _env;
+		distribution.init(env);
 	}
 	Vec3 sample(const ShadingData& shadingData, Sampler* sampler, Colour& reflectedColour, float& pdf)
 	{
-		// Assignment: Update this code to importance sampling lighting based on luminance of each pixel
-		Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
-		pdf = SamplingDistributions::uniformSpherePDF(wi);
-		reflectedColour = evaluate(wi);
+		float u, v;
+		Vec3 wi = distribution.sample(sampler, u, v, pdf);
+		reflectedColour = env->sample(u, v);
 		return wi;
 	}
 	Colour evaluate(const Vec3& wi)
@@ -153,8 +270,15 @@ public:
 	}
 	float PDF(const ShadingData& shadingData, const Vec3& wi)
 	{
-		// Assignment: Update this code to return the correct PDF of luminance weighted importance sampling
-		return SamplingDistributions::uniformSpherePDF(wi);
+		float u = atan2f(wi.z, wi.x);
+		if (u < 0.0f) u += 2.0f * M_PI;
+		u /= (2.0f * M_PI);
+		float v = acosf(wi.y) / M_PI;
+		
+		int row = std::min(int(v * distribution.height), (int)distribution.height - 1);
+		int col = std::min(int(u * distribution.width), (int)distribution.width - 1);
+
+		return distribution.getPdf(row, col);
 	}
 	bool isArea()
 	{
@@ -189,9 +313,7 @@ public:
 	}
 	Vec3 sampleDirectionFromLight(Sampler* sampler, float& pdf)
 	{
-		// Replace this tabulated sampling of environment maps
-		Vec3 wi = SamplingDistributions::uniformSampleSphere(sampler->next(), sampler->next());
-		pdf = SamplingDistributions::uniformSpherePDF(wi);
-		return wi;
+		float u, v;
+		return distribution.sample(sampler, u, v, pdf);
 	}
 };

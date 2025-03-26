@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
 	// runTests()
 	
 	// Initialize default parameters
-	std::string sceneName = "MaterialsScene";
+	std::string sceneName = "dining-room";
 	std::string filename = "GI.hdr";
 	unsigned int SPP = 8192;
 

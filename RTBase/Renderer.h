@@ -84,7 +84,7 @@ public:
 		}
 		return Colour(0.0f, 0.0f, 0.0f);
 	}
-	Colour pathTrace(Ray& r, Colour& pathThroughput, int depth, Sampler* sampler, bool canHitLight = true)
+	Colour pathTrace(Ray& r, Colour& pathThroughput, int depth, Sampler* sampler, bool canHitLight = true, Vec3 prevWi = Vec3(), float prevPdf = -1.0f)
 	{
 		IntersectionData intersection = scene->traverse(r);
 		ShadingData shadingData = scene->calculateShadingData(intersection, r);
@@ -94,7 +94,14 @@ public:
 			{
 				if (canHitLight == true)
 				{
-					return pathThroughput * shadingData.bsdf->emit(shadingData, shadingData.wo);
+					Colour emission = shadingData.bsdf->emit(shadingData, shadingData.wo);
+
+					// MIS: Combine BSDF and environment PDF
+					float lightPdf = prevPdf > 0.0f ? prevPdf : 0.0f;
+					float bsdfPdf = shadingData.bsdf->PDF(shadingData, prevWi);
+					float weight = (lightPdf + bsdfPdf) > 0.0f ? bsdfPdf / (bsdfPdf + lightPdf) : 1.0f;
+
+					return pathThroughput * emission * weight;
 				}
 				else
 				{
@@ -121,9 +128,18 @@ public:
 			bsdf = shadingData.bsdf->evaluate(shadingData, wi);
 			pathThroughput = pathThroughput * bsdf * fabsf(Dot(wi, shadingData.sNormal)) / pdf;
 			r.init(shadingData.x + (wi * EPSILON), wi);
-			return (direct + pathTrace(r, pathThroughput, depth + 1, sampler, shadingData.bsdf->isPureSpecular()));
+			return (direct + pathTrace(r, pathThroughput, depth + 1, sampler, shadingData.bsdf->isPureSpecular(), -r.dir, pdf));
 		}
-		return scene->background->evaluate(r.dir);
+		if (canHitLight && scene->background)
+		{
+			Colour Le = scene->background->evaluate(r.dir);
+			float envPdf = scene->background->PDF({}, r.dir);
+			float bsdfPdf = prevPdf > 0.0f ? prevPdf : 0.0f;
+			float weight = (envPdf + bsdfPdf) > 0.0f ? bsdfPdf / (envPdf + bsdfPdf) : 1.0f;
+			return pathThroughput * Le * weight;
+		}
+
+		return Colour(0.0f, 0.0f, 0.0f);
 	}
 	Colour direct(Ray& r, Sampler* sampler)
 	{
