@@ -165,9 +165,6 @@ TEST(AABBRayIntersect, ParallelToFace)
     EXPECT_FALSE(intersects) << "Ray is parallel to X and offset in Y, so it should miss the box.";
 }
 
-//------------------------------------------
-// AABB Extend Tests
-//------------------------------------------
 TEST(AABBExtend, SinglePoint)
 {
     AABB box;
@@ -250,9 +247,6 @@ TEST(AABBExtend, MergeBoxes)
     EXPECT_FLOAT_EQ(boxA.max.z, 5.0f);
 }
 
-//------------------------------------------
-// AABB Area Tests
-//------------------------------------------
 TEST(AABBMethods, Area)
 {
     AABB box;
