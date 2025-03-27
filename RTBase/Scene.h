@@ -79,7 +79,6 @@ public:
 	std::vector<Light*> lights;
 	Light* background = NULL;
 	BVHNode* bvh = NULL;
-	//BVHTree bvhTree;
 	Camera camera;
 	AABB bounds;
 
@@ -140,8 +139,6 @@ public:
 		//}
 		//return intersection;
 
-		/*return bvhTree.traverse(ray, triangles);*/
-
 		return bvh->traverse(ray, triangles);
 	}
 	Light* sampleLight(Sampler* sampler, float& pmf)
@@ -177,7 +174,7 @@ public:
 		float maxT = dir.length() - (2.0f * EPSILON);
 		dir = dir.normalize();
 		ray.init(p1 + (dir * EPSILON), dir);
-		//return bvhTree.traverseVisible(ray, maxT);
+
 		return bvh->traverseVisible(ray, triangles, maxT);
 
 		//for (int i = 0; i < triangles.size(); i++)
