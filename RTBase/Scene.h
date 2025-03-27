@@ -29,7 +29,6 @@ public:
 		float aspect = ProjectionMatrix.a[0][0] / ProjectionMatrix.a[1][1];
 		float Hlens = Wlens * aspect;
 		Afilm = Wlens * Hlens;
-
 	}
 	void updateView(Matrix V)
 	{
