@@ -45,8 +45,8 @@ public:
 		float sinT2 = eta * eta * (1.0f - cosTheta * cosTheta);
 		if (sinT2 > 1.0f) return 1.0f; // Total internal reflection
 		float cosT = sqrtf(1.0f - sinT2);
-		float rParl = (etaT * cosTheta - etaI * cosT) / (etaT * cosTheta + etaI * cosT);
-		float rPerp = (etaI * cosTheta - etaT * cosT) / (etaI * cosTheta + etaT * cosT);
+		float rParl = (cosTheta - etaI * cosT) / (cosTheta + etaI * cosT);
+		float rPerp = (etaI * cosTheta - cosT) / (etaI * cosTheta + cosT);
 		return 0.5f * (rParl * rParl + rPerp * rPerp);
 	}
 	static Colour fresnelConductor(float cosTheta, Colour ior, Colour k)

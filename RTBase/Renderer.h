@@ -236,7 +236,7 @@ public:
 								Colour pathT = pathTrace(ray, th, 0, sampler);
 								film->splat(tx, ty, pathT);
 								unsigned char r, g, b;
-								film->tonemap(x, y, r, g, b);
+								film->FilmicTonemap(x, y, r, g, b);
 								canvas->draw(x, y, r, g, b);
 							}
 						}
