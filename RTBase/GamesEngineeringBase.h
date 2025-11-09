@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2024 MSc Games Engineering Team
+Copyright (c) 2024-2025 MSc Games Engineering Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@ SOFTWARE.
 #pragma once
 
 // Include necessary Windows and DirectX headers
+#define NOMINMAX
 #include <Windows.h>
 #include <string>
 #include <D3D11.h>
@@ -33,9 +34,10 @@ SOFTWARE.
 #include <map>
 #include <wincodec.h>
 #include <wincodecsdk.h>
-#include <atlbase.h>
+#include <wrl/client.h>
 #include <Xinput.h>
 #include <math.h>
+#include <algorithm>
 
 // Link necessary libraries
 #pragma comment(lib, "D3D11.lib")
@@ -43,7 +45,7 @@ SOFTWARE.
 #pragma comment(lib, "WindowsCodecs.lib")
 #pragma comment(lib, "xinput.lib")
 
-// Stop warnings about possible NULL values for backbuffer and buffer. This should work on any modern hardware.
+// Stop warnings about possible NULL values for buffer and backbuffer. This should work on any modern hardware.
 #pragma warning( disable : 6387)
 
 // Define the namespace to encapsulate the library's classes
@@ -62,6 +64,14 @@ namespace GamesEngineeringBase
 		MouseRight = 2
 	};
 
+	// Enum for button states
+	enum MouseButtonState
+	{
+		MouseUp = 0,
+		MouseDown = 1,
+		MousePressed = 2
+	};
+
 	// The Window class manages the creation and rendering of a window
 	class Window
 	{
@@ -69,7 +79,6 @@ namespace GamesEngineeringBase
 		// Private member variables
 		HWND hwnd;                               // Handle to the window
 		HINSTANCE hinstance;                     // Handle to the application instance
-		float invZoom;                           // Inverse of the zoom factor
 		std::string name;                        // Window name/title
 		ID3D11Device* dev;                       // Direct3D device
 		ID3D11DeviceContext* devcontext;         // Direct3D device context
@@ -84,7 +93,7 @@ namespace GamesEngineeringBase
 		bool keys[256];                          // Keyboard state array
 		int mousex;                              // Mouse X-coordinate
 		int mousey;                              // Mouse Y-coordinate
-		bool mouseButtons[3];                    // Mouse button states (left, middle, right)
+		MouseButtonState buttonStates[3];		 // Mouse button states
 		int mouseWheel;                          // Mouse wheel value
 		unsigned int width = 0;                  // Window width
 		unsigned int height = 0;                 // Window height
@@ -119,6 +128,13 @@ namespace GamesEngineeringBase
 		// Instance-specific window procedure to handle messages
 		LRESULT CALLBACK realWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		{
+			for (int i = 0; i < 3; i++)
+			{
+				if (buttonStates[i] == MouseDown)
+				{
+					buttonStates[i] = MousePressed;
+				}
+			}
 			switch (msg)
 			{
 			case WM_DESTROY:
@@ -145,42 +161,42 @@ namespace GamesEngineeringBase
 			{
 				// Handle left mouse button down
 				updateMouse(CANVAS_GET_X_LPARAM(lParam), CANVAS_GET_Y_LPARAM(lParam));
-				mouseButtons[0] = true;
+				buttonStates[0] = MouseDown;
 				return 0;
 			}
 			case WM_LBUTTONUP:
 			{
 				// Handle left mouse button up
 				updateMouse(CANVAS_GET_X_LPARAM(lParam), CANVAS_GET_Y_LPARAM(lParam));
-				mouseButtons[0] = false;
+				buttonStates[0] = MouseUp;
 				return 0;
 			}
 			case WM_RBUTTONDOWN:
 			{
 				// Handle right mouse button down
 				updateMouse(CANVAS_GET_X_LPARAM(lParam), CANVAS_GET_Y_LPARAM(lParam));
-				mouseButtons[2] = true;
+				buttonStates[2] = MouseDown;
 				return 0;
 			}
 			case WM_RBUTTONUP:
 			{
 				// Handle right mouse button up
 				updateMouse(CANVAS_GET_X_LPARAM(lParam), CANVAS_GET_Y_LPARAM(lParam));
-				mouseButtons[2] = false;
+				buttonStates[2] = MouseUp;
 				return 0;
 			}
 			case WM_MBUTTONDOWN:
 			{
 				// Handle middle mouse button down
 				updateMouse(CANVAS_GET_X_LPARAM(lParam), CANVAS_GET_Y_LPARAM(lParam));
-				mouseButtons[1] = true;
+				buttonStates[1] = MouseDown;
 				return 0;
 			}
 			case WM_MBUTTONUP:
 			{
 				// Handle middle mouse button up
 				updateMouse(CANVAS_GET_X_LPARAM(lParam), CANVAS_GET_Y_LPARAM(lParam));
-				mouseButtons[1] = false;
+				buttonStates[1] = MouseUp;
 				return 0;
 			}
 			case WM_MOUSEWHEEL:
@@ -218,7 +234,7 @@ namespace GamesEngineeringBase
 
 	public:
 		// Creates and initializes the window
-		void create(unsigned int window_width, unsigned int window_height, const std::string window_name, float zoom = 1.0f, bool window_fullscreen = false, int window_x = 0, int window_y = 0)
+		void create(unsigned int window_width, unsigned int window_height, const std::string window_name, bool window_fullscreen = false, int window_x = 0, int window_y = 0)
 		{
 			// Window class structure
 			WNDCLASSEX wc;
@@ -263,15 +279,15 @@ namespace GamesEngineeringBase
 				// Configure windowed mode settings
 				width = window_width;
 				height = window_height;
-				style = (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX) | WS_VISIBLE;
+				style = (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SIZEBOX) | WS_VISIBLE;
 			}
 
 			// Set the process DPI awareness for proper scaling
 			SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_UNAWARE);
 
 			// Adjust window rectangle to accommodate for window borders
-			RECT wr = { 0, 0, static_cast<LONG>(width * zoom), static_cast<LONG>(height * zoom) };
-			AdjustWindowRect(&wr, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX), FALSE);
+			RECT wr = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
+			AdjustWindowRect(&wr, (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SIZEBOX), FALSE);
 
 			// Create the window
 			hwnd = CreateWindowEx(
@@ -287,9 +303,6 @@ namespace GamesEngineeringBase
 				NULL,
 				hinstance,
 				this);
-
-			// Calculate inverse zoom factor
-			invZoom = 1.0f / static_cast<float>(zoom);
 
 			// Display and focus the window
 			ShowWindow(hwnd, SW_SHOW);
@@ -468,7 +481,10 @@ namespace GamesEngineeringBase
 
 			// Initialize input states
 			memset(keys, 0, 256 * sizeof(bool));
-			memset(mouseButtons, 0, 3 * sizeof(bool));
+			for (int i = 0; i < 3; i++)
+			{
+				buttonStates[i] = MouseUp;
+			}
 
 			// Initialize COM library for image loading
 			HRESULT comResult;
@@ -482,7 +498,7 @@ namespace GamesEngineeringBase
 		}
 
 		// Returns a pointer to the back buffer image data
-		unsigned char* backBuffer()
+		unsigned char* backBuffer() const
 		{
 			return image;
 		}
@@ -541,55 +557,69 @@ namespace GamesEngineeringBase
 		}
 
 		// Returns the window's width
-		unsigned int getWidth()
+		unsigned int getWidth() const
 		{
 			return width;
 		}
 
 		// Returns the window's height
-		unsigned int getHeight()
+		unsigned int getHeight() const
 		{
 			return height;
 		}
 
 		// Provide raw access to back buffer
-		unsigned char* getBackBuffer()
+		// There are no checks done on this so any writes to this buffer should be within bounds
+		// Can be used for screenshots
+		unsigned char* getBackBuffer() const
 		{
 			return image;
 		}
 
 		// Checks if a specific key is currently pressed
-		bool keyPressed(int key)
+		bool keyPressed(int key) const
 		{
 			return keys[key];
 		}
 
 		// Check if a mouse button is pressed. Takes a MouseButton enum
-		bool mouseButtonPressed(MouseButton button)
+		bool mouseButtonPressed(MouseButton button) const
 		{
-			return mouseButtons[button];
+			return (buttonStates[button] == MouseDown || buttonStates[button] == MousePressed);
+		}
+
+		// Check mouse button is state. Takes a MouseButton enum
+		MouseButtonState mouseButtonState(MouseButton button) const
+		{
+			return buttonStates[button];
 		}
 
 		// Returns the mouse x coordinate
-		int getMouseX()
+		int getMouseX() const
 		{
 			return mousex;
 		}
 
 		// Returns the mouse y coordinate
-		int getMouseY()
+		int getMouseY() const
 		{
 			return mousey;
 		}
 
 		// Returns the mouse wheel value
-		int getMouseWheel()
+		int getMouseWheel() const
 		{
 			return mouseWheel;
 		}
 
+		// Reset the mouse wheel
+		void resetMouseWheelPosition()
+		{
+			mouseWheel = 0;
+		}
+
 		// Gets the mouse X-coordinate relative to the window, accounting for zoom
-		int getMouseInWindowX()
+		int getMouseInWindowX() const
 		{
 			POINT p;
 			GetCursorPos(&p);
@@ -597,12 +627,12 @@ namespace GamesEngineeringBase
 			RECT rect;
 			GetClientRect(hwnd, &rect);
 			p.x = p.x - rect.left;
-			p.x = static_cast<LONG>(p.x * invZoom);
+			p.x = static_cast<LONG>(p.x);
 			return p.x;
 		}
 
 		// Gets the mouse Y-coordinate relative to the window, accounting for zoom
-		int getMouseInWindowY()
+		int getMouseInWindowY() const
 		{
 			POINT p;
 			GetCursorPos(&p);
@@ -610,12 +640,12 @@ namespace GamesEngineeringBase
 			RECT rect;
 			GetClientRect(hwnd, &rect);
 			p.y = p.y - rect.top;
-			p.y = static_cast<LONG>(p.y * invZoom);
+			p.y = static_cast<LONG>(p.y);
 			return p.y;
 		}
 
 		// Restricts the mouse cursor to the window's client area
-		void clipMouseToWindow()
+		void clipMouseToWindow() const
 		{
 			RECT rect;
 			GetClientRect(hwnd, &rect);
@@ -822,6 +852,24 @@ namespace GamesEngineeringBase
 			sourceVoice[index]->SubmitSourceBuffer(&buffer);
 			sourceVoice[index]->Start(0);
 		}
+
+		~Sound()
+		{
+			delete[] buffer.pAudioData;
+			for (int i = 0; i < 128; i++)
+			{
+				if (sourceVoice[i])
+				{
+					sourceVoice[i]->DestroyVoice();
+				}
+			}
+		}
+
+		Sound() = default;
+		Sound(const Sound&) = delete;
+		Sound& operator=(const Sound&) = delete;
+		Sound(Sound&&) = delete;
+		Sound& operator=(Sound&&) = delete;
 	};
 
 	// The SoundManager class manages multiple Sound instances
@@ -935,16 +983,64 @@ namespace GamesEngineeringBase
 	public:
 		unsigned int width;       // Image width
 		unsigned int height;      // Image height
-		unsigned int channels;             // Number of color channels
+		unsigned int channels;    // Number of color channels
 		unsigned char* data;      // Pointer to image data
+
+		// Default constructor
+		Image()
+		{
+			width = 0;
+			height = 0;
+			channels = 0;
+			data = nullptr;
+		}
+
+		// Move constructor
+		Image(Image&& other)
+		{
+			width = other.width;
+			height = other.height;
+			channels = other.channels;
+			data = other.data;
+			other.width = 0;
+			other.height = 0;
+			other.channels = 0;
+			other.data = nullptr;
+		}
+
+		// Move assignment
+		Image& operator=(Image&& other)
+		{
+			if (this != &other)
+			{
+				free();
+				width = other.width;
+				height = other.height;
+				channels = other.channels;
+				data = other.data;
+				other.width = 0;
+				other.height = 0;
+				other.channels = 0;
+				other.data = nullptr;
+			}
+			return *this;
+		}
+
+		// Remove copy constructors
+		Image(const Image&) = delete;
+		Image& operator=(const Image&) = delete;
 
 		// Loads an image from a file using WIC
 		bool load(std::string filename)
 		{
-			CComPtr<IWICImagingFactory> factory;
-			HRESULT hr = factory.CoCreateInstance(CLSID_WICImagingFactory);
+			Microsoft::WRL::ComPtr<IWICImagingFactory> factory;
+			HRESULT hr = ::CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory));
+			if (FAILED(hr))
+			{
+				return false;
+			}
 
-			CComPtr<IWICBitmapDecoder> decoder;
+			Microsoft::WRL::ComPtr<IWICBitmapDecoder> decoder;
 			IWICStream* stream = NULL;
 			factory->CreateStream(&stream);
 
@@ -952,7 +1048,7 @@ namespace GamesEngineeringBase
 			stream->InitializeFromFilename(wFilename.c_str(), GENERIC_READ);
 			factory->CreateDecoderFromStream(stream, 0, WICDecodeMetadataCacheOnDemand, &decoder);
 
-			CComPtr<IWICBitmapFrameDecode> frame;
+			Microsoft::WRL::ComPtr<IWICBitmapFrameDecode> frame;
 			decoder->GetFrame(0, &frame);
 
 			frame->GetSize(&width, &height);
@@ -1019,39 +1115,39 @@ namespace GamesEngineeringBase
 
 		// Returns a pointer to the pixel data at (x, y)
 		// Note, the bounds are handled via clamping
-		unsigned char* at(unsigned int x, unsigned int y)
+		unsigned char* at(const unsigned int x, const unsigned int y) const
 		{
-			return &data[((min(y, height - 1) * width) + min(x, width  - 1)) * channels];
+			return &data[((std::min(y, height - 1) * width) + std::min(x, width  - 1)) * channels];
 		}
 
 		// Returns the alpha value of the pixel at (x, y)
 		// Note, the bounds are handled via clamping
-		unsigned char alphaAt(unsigned int x, unsigned int y)
+		unsigned char alphaAt(const unsigned int x, const unsigned int y) const
 		{
 			if (channels == 4)
 			{
-				return data[((min(y, height - 1) * width) + min(x, width - 1)) * channels + 3];
+				return data[((std::min(y, height - 1) * width) + std::min(x, width - 1)) * channels + 3];
 			}
 			return 255;
 		}
 
 		// Returns a the colour specified by index at (x, y)
 		// Note, the image bounds are handled via clamping, but the index is not checked
-		unsigned char at(unsigned int x, unsigned int y, unsigned int index)
+		unsigned char at(const unsigned int x, const unsigned int y, const unsigned int index) const
 		{
-			return data[(((min(y, height - 1) * width) + min(x, width - 1)) * channels) + index];
+			return data[(((std::min(y, height - 1) * width) + std::min(x, width - 1)) * channels) + index];
 		}
 
 		// Returns a pointer to the pixel data at (x, y)
 		// Note, no checks performed on x and y coordinates
-		unsigned char* atUnchecked(unsigned int x, unsigned int y)
+		unsigned char* atUnchecked(const unsigned int x, const unsigned int y) const
 		{
 			return &data[((y * width) + x) * channels];
 		}
 
 		// Returns the alpha value of the pixel at (x, y)
 		// Note, no checks performed on x and y coordinates
-		unsigned char alphaAtUnchecked(unsigned int x, unsigned int y)
+		unsigned char alphaAtUnchecked(const unsigned int x, const unsigned int y) const
 		{
 			if (channels == 4)
 			{
@@ -1061,7 +1157,7 @@ namespace GamesEngineeringBase
 		}
 
 		// Checks if the image has an alpha channel
-		bool hasAlpha()
+		bool hasAlpha() const
 		{
 			return channels == 4;
 		}
@@ -1116,8 +1212,15 @@ namespace GamesEngineeringBase
 			lX = state.Gamepad.sThumbLX;
 			lY = state.Gamepad.sThumbLY;
 			float lLen = sqrtf((lX * lX) + (lY * lY));
-			lX = lX / lLen;
-			lY = lY / lLen;
+			if (lLen > 0)
+			{
+				lX = lX / lLen;
+				lY = lY / lLen;
+			} else
+			{
+				lX = 0;
+				lY = 0;
+			}
 			if (lLen > XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE)
 			{
 				if (lLen > 32767)
@@ -1178,8 +1281,8 @@ namespace GamesEngineeringBase
 		// Sets the vibration intensity for the left and right motors
 		void vibrate(float l, float r)
 		{
-			unsigned short lV = min(static_cast<unsigned short>(l * 65535), 65535);
-			unsigned short rV = min(static_cast<unsigned short>(r * 65535), 65535);
+			unsigned short lV = std::min(static_cast<unsigned short>(l * 65535), static_cast<unsigned short>(65535));
+			unsigned short rV = std::min(static_cast<unsigned short>(r * 65535), static_cast<unsigned short>(65535));
 			XINPUT_VIBRATION vibration;
 			memset(&vibration, 0, sizeof(XINPUT_VIBRATION));
 			vibration.wLeftMotorSpeed = lV;
